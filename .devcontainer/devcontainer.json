@@ -1,0 +1,27 @@
+{
+    "name": "Base SHIFT Python 2024",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "app",
+    "workspaceFolder": "/workspace",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+    }, 
+    "remoteEnv": {},
+    "postStartCommand": "/root/post-start.sh",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "EditorConfig.EditorConfig",
+                "eamodio.gitlens",
+                "ms-azuretools.vscode-docker",
+                "ms-python.python",
+                "redhat.vscode-yaml",
+                "tamasfe.even-better-toml"
+            ]
+        }
+    },
+    "mounts": [
+        "source=shift-python-2024-base,target=/commandhistory,type=volume"
+    ],
+    "remoteUser": "root"
+}
