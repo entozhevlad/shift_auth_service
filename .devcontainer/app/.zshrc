@@ -114,9 +114,10 @@ source $ZSH/oh-my-zsh.sh
 export PROMPT_COMMAND='history -a'
 export HISTFILE="/commandhistory/.zsh_history"
 
-
 export HISTSIZE=500000
 export SAVEHIST=500000
 
 fpath+=~/.zfunc
 autoload -Uz compinit && compinit
+
+export PATH="$HOME/.local/bin:$PATH"

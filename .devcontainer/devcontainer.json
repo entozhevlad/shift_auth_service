@@ -1,11 +1,11 @@
 {
-    "name": "Base SHIFT Python 2024",
+    "name": "SHIFT Python 2024: Week 0",
     "dockerComposeFile": "docker-compose.yml",
     "service": "app",
     "workspaceFolder": "/workspace",
     "features": {
         "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
-    }, 
+    },
     "remoteEnv": {},
     "postStartCommand": "/root/post-start.sh",
     "customizations": {
@@ -16,12 +16,16 @@
                 "ms-azuretools.vscode-docker",
                 "ms-python.python",
                 "redhat.vscode-yaml",
-                "tamasfe.even-better-toml"
+                "tamasfe.even-better-toml",
+                "njpwerner.autodocstring",
+                "LittleFoxTeam.vscode-python-test-adapter",
+                "Natizyskunk.sftp",
+                "njqdev.vscode-python-typehint"
             ]
         }
     },
     "mounts": [
-        "source=shift-python-2024-base,target=/commandhistory,type=volume"
+        "source=shift-python-2024-week0,target=/commandhistory,type=volume"
     ],
     "remoteUser": "root"
 }
