@@ -31,7 +31,8 @@
                 "ms-python.python",
                 "redhat.vscode-yaml",
                 "tamasfe.even-better-toml",
-                "njqdev.vscode-python-typehint"
+                "njqdev.vscode-python-typehint",
+                "vscode-icons-team.vscode-icons"
             ]
         }
     },
