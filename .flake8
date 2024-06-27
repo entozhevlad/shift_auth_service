@@ -1,0 +1,2 @@
+[flake8]
+ignore = D100, DAR101, DAR201, DAR301, DAR401

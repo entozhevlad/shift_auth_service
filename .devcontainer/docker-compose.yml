@@ -15,3 +15,5 @@ services:
       - SYS_PTRACE
     security_opt:
       - seccomp:unconfined
+    environment:
+      - PYTHONPATH=/workspace/src

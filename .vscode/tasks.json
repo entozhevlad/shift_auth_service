@@ -1,0 +1,16 @@
+// https://code.visualstudio.com/docs/editor/tasks
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Flake8",
+            "type": "shell",
+            "command": "poetry run flake8 --jobs=1 src/app",
+        },
+        {
+            "label": "ISort",
+            "type": "shell",
+            "command": "poetry run isort src/app",
+        }
+    ]
+}

@@ -10,8 +10,20 @@ end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 
+[*.py]
+max_line_length = 100
+indent_style = space
+indent_size = 4
+balanced_wrapping = true
+# isort config
+multi_line_output = 3
+known_first_party = app
+default_section = THIRDPARTY
+sections = FUTURE,STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER
+skip = build,.tox,.venv,venv
+
 # 4 space indentation
-[*.py, *.json]
+[*.json]
 indent_style = space
 indent_size = 4
 
