@@ -7,12 +7,12 @@ logging.basicConfig(level=logging.INFO)
 
 def main():
     """
-    Главная функция приложения для демонстрации работы AuthService
+    Функция приложения для демонстрации работы AuthService
     """
     auth_service = AuthService()
 
-    username = "user1"
-    password = "password123"
+    username = "user"
+    password = "password"
 
     # Регистрация пользователя
     token = auth_service.register(username, password)
