@@ -1,7 +1,6 @@
 stages:
   - lint
   - test
-  - build
 
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
@@ -31,19 +30,6 @@ test:
   script:
     - poetry install
     - poetry run pytest
-  cache:
-    paths:
-      - .venv/
-      - poetry.lock
-      - pyproject.toml
-      - .cache/pip
-
-build:
-  stage: build
-  image: python:3.12
-  script:
-    - poetry install
-    - poetry run python src/app/main.py
   cache:
     paths:
       - .venv/
