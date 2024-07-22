@@ -1,6 +1,6 @@
 import logging
 
-from auth_service import AuthService
+from src.app.services.auth_service import AuthService
 
 logging.basicConfig(level=logging.INFO)
 

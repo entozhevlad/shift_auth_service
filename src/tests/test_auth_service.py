@@ -1,7 +1,7 @@
 import pytest
 import jwt
 from datetime import datetime, timedelta
-from src.app.auth_service import User, AuthService, SECRET_KEY
+from src.app.services.auth_service import User, AuthService, SECRET_KEY
 
 
 @pytest.fixture
