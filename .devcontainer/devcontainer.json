@@ -1,5 +1,5 @@
 {
-    "name": "SHIFT Python 2024",
+    "name": "auth_service_zarubin",
     "dockerComposeFile": "docker-compose.yml",
     "service": "app",
     "workspaceFolder": "/workspace",
