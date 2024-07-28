@@ -1,31 +1,61 @@
 import pytest
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
+
 from src.app.main import app
 
 client = TestClient(app)
 
-@pytest.fixture
-def user_data():
-    return {'username': 'testuser', 'password': 'testpassword'}
 
-def test_register(user_data):
-    response = client.post("/register", json=user_data)
+@pytest.fixture
+async def async_client():
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        yield ac
+
+
+def test_register():
+    response = client.post(
+        "/register", json={"username": "testuser", "password": "testpass"})
     assert response.status_code == 200
     assert "token" in response.json()
 
-def test_register_existing_user(user_data):
-    client.post("/register", json=user_data)  # First registration
-    response = client.post("/register", json=user_data)  # Second registration
+
+def test_register_existing_user():
+    client.post("/register", json={"username": "testuser", "password": "testpass"})
+    response = client.post(
+        "/register", json={"username": "testuser", "password": "testpass"})
     assert response.status_code == 400
     assert response.json() == {"detail": "User already exists"}
 
-def test_login(user_data):
-    client.post("/register", json=user_data)  # Register user first
-    response = client.post("/login", data=user_data)
+
+def test_login():
+    client.post("/register", json={"username": "testuser", "password": "testpass"})
+    response = client.post(
+        "/login", json={"username": "testuser", "password": "testpass"})
     assert response.status_code == 200
     assert "token" in response.json()
 
+
 def test_login_invalid_user():
-    response = client.post("/login", data={"username": "wronguser", "password": "wrongpassword"})
+    response = client.post(
+        "/login", json={"username": "invaliduser", "password": "invalidpass"})
     assert response.status_code == 400
     assert response.json() == {"detail": "Invalid username or password"}
+
+
+@pytest.mark.asyncio
+async def test_verify_token(async_client):
+    response = client.post(
+        "/register", json={"username": "testuser", "password": "testpass"})
+    token = response.json()["token"]
+
+    response = await async_client.post("/verify", json={"token": token})
+    assert response.status_code == 200
+    assert response.json() == {"user": "testuser"}
+
+
+@pytest.mark.asyncio
+async def test_verify_invalid_token(async_client):
+    response = await async_client.post("/verify", json={"token": "invalidtoken"})
+    assert response.status_code == 401
+    assert response.json() == {"detail": "Invalid token"}

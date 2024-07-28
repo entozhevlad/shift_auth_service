@@ -1,31 +1,41 @@
 import logging
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
-from fastapi.security import OAuth2PasswordRequestForm
-from src.app.services.auth_service import AuthService
+from src.app.services.auth_service import AuthService, get_current_user
 
-app = FastAPI()
 logging.basicConfig(level=logging.INFO)
 
+app = FastAPI()
 auth_service = AuthService()
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-class RegisterUser(BaseModel):
+class UserCredentials(BaseModel):
     username: str
     password: str
 
 
 @app.post("/register")
-def register(user: RegisterUser):
-    token = auth_service.register(user.username, user.password)
-    if token:
-        return {"token": token}
-    raise HTTPException(status_code=400, detail="User already exists")
+async def register(user_credentials: UserCredentials):
+    token = auth_service.register(user_credentials.username, user_credentials.password)
+    if not token:
+        raise HTTPException(status_code=400, detail="User already exists")
+    return {"token": token}
 
 
 @app.post("/login")
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    token = auth_service.authenticate(form_data.username, form_data.password)
-    if token:
-        return {"token": token}
-    raise HTTPException(status_code=400, detail="Invalid username or password")
+async def login(user_credentials: UserCredentials):
+    token = auth_service.authenticate(
+        user_credentials.username, user_credentials.password)
+    if not token:
+        raise HTTPException(status_code=400, detail="Invalid username or password")
+    return {"token": token}
+
+
+@app.post("/verify")
+async def verify(token: str):
+    user = auth_service.verify_token(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    return {"user": user}
