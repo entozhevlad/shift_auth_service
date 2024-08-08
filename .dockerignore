@@ -1,0 +1,14 @@
+# Исключение ненужных файлов и папок из образа
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+venv
+*.log
+*.sqlite3
+.DS_Store
+.git
+.gitignore
+.idea
+.vscode
+tests

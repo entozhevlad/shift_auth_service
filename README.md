@@ -1,4 +1,4 @@
-# Face Verification Service
+# Auth Service
 
 Сервис авторизации пользователей
 
@@ -20,7 +20,8 @@
 
 Запустите главный файл проекта:
 ```sh
-poetry run python src/app/main.py
+uvicorn src.app.main:app --host 0.0.0.0 --port 82 --reload
+
 
 
 
