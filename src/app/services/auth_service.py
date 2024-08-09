@@ -11,13 +11,11 @@ SECRET_KEY = config('SECRET_KEY')
 ALGORITHM = "HS256"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-
 @dataclass
 class User:
     username: str
     password: str
     token: Optional[str] = None
-
 
 class AuthService:
     def __init__(self):
@@ -55,9 +53,8 @@ class AuthService:
         except jwt.PyJWTError:
             return None
 
-
 def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
-    auth_service = AuthService()
+    auth_service = AuthService()  # Создаем новый экземпляр AuthService
     user = auth_service.verify_token(token)
     if user is None:
         raise HTTPException(
