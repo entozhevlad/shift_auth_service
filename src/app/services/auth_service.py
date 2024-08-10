@@ -1,7 +1,6 @@
 import datetime
 from dataclasses import dataclass
 from typing import Dict, Optional
-
 import jwt
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
@@ -9,7 +8,7 @@ from decouple import config
 
 SECRET_KEY = config('SECRET_KEY')
 ALGORITHM = "HS256"
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 @dataclass
 class User:
@@ -53,11 +52,4 @@ class AuthService:
         except jwt.PyJWTError:
             return None
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
-    auth_service = AuthService()  # Создаем новый экземпляр AuthService
-    user = auth_service.verify_token(token)
-    if user is None:
-        raise HTTPException(
-            status_code=401, detail="Invalid or expired token"
-        )
-    return user
+

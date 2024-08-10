@@ -2,12 +2,20 @@ import logging
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
-from src.app.services.auth_service import AuthService, get_current_user
+from src.app.services.auth_service import AuthService, oauth2_scheme
 
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
 auth_service = AuthService()
+
+def get_current_user(token: str = Depends(oauth2_scheme)) -> str:
+    user = auth_service.verify_token(token)
+    if user is None:
+        raise HTTPException(
+            status_code=401, detail="Invalid or expired token"
+        )
+    return user
 
 class UserCredentials(BaseModel):
     username: str
