@@ -1,6 +1,3 @@
-
-
-
 import logging
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -41,10 +38,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
 @app.post("/verify")
 async def verify(current_user: str = Depends(get_current_user)):
     return {"user": current_user}
-
-from fastapi import FastAPI
-
-app = FastAPI()
 
 @app.get("/healthz/ready")
 async def health_check():
