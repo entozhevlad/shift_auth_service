@@ -51,3 +51,5 @@ async def verify(current_user: User = Depends(get_current_user)):
 async def health_check():
     """Проверка состояния сервиса."""
     return {"status": "healthy"}
+
+#
