@@ -1,5 +1,5 @@
 import logging
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Optional
 from src.app.services.auth_service import AuthService, oauth2_scheme, User
@@ -52,4 +52,15 @@ async def health_check():
     """Проверка состояния сервиса."""
     return {"status": "healthy"}
 
-##
+@app.get("/verify_by_token")
+async def verify_by_token(token: str = Query(...)):
+    """Проверяет валидность токена и возвращает информацию о пользователе."""
+    user = auth_service.verify_token(token)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return {
+        "username": user.username,
+        "user_id": str(user.user_id),
+        "first_name": user.first_name,
+        "last_name": user.last_name
+    }
