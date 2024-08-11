@@ -1,4 +1,5 @@
 import datetime
+import uuid
 from dataclasses import dataclass
 from typing import Dict, Optional
 import jwt
@@ -12,45 +13,53 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 @dataclass
 class User:
+    """Класс, представляющий пользователя."""
     username: str
     password: str
+    user_id: uuid.UUID
+    first_name: str
+    last_name: str
     token: Optional[str] = None
 
 class AuthService:
     def __init__(self):
         self.users: Dict[str, User] = {}
 
-    def register(self, username: str, password: str) -> Optional[str]:
+    def register(self, username: str, password: str, first_name: str, last_name: str) -> Optional[str]:
+        """Регистрирует нового пользователя."""
         if username in self.users:
             return None
-        token = self._generate_token(username)
-        user = User(username=username, password=password, token=token)
+        user_id = uuid.uuid4()  # Генерируем уникальный идентификатор пользователя
+        token = self._generate_token(username, user_id)
+        user = User(username=username, password=password, user_id=user_id, first_name=first_name, last_name=last_name, token=token)
         self.users[username] = user
         return token
 
     def authenticate(self, username: str, password: str) -> Optional[str]:
+        """Аутентифицирует пользователя."""
         user = self.users.get(username)
         if not user or user.password != password:
             return None
-        user.token = self._generate_token(username)
+        user.token = self._generate_token(username, user.user_id)
         return user.token
 
-    def _generate_token(self, username: str) -> str:
+    def _generate_token(self, username: str, user_id: uuid.UUID) -> str:
+        """Создает JWT-токен."""
         payload = {
             "username": username,
+            "user_id": str(user_id),  # Добавляем user_id в токен
             "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1),
         }
         return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
-    def verify_token(self, token: str) -> Optional[str]:
+    def verify_token(self, token: str) -> Optional[Dict[str, str]]:
+        """Проверяет JWT-токен и извлекает из него данные."""
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             username: str = payload.get("username")
-            if username is None:
+            user_id: str = payload.get("user_id")
+            if username is None or user_id is None:
                 return None
-            return username
+            return {"username": username, "user_id": user_id}
         except jwt.PyJWTError:
             return None
-
-
-
