@@ -52,4 +52,4 @@ async def health_check():
     """Проверка состояния сервиса."""
     return {"status": "healthy"}
 
-#
+##
