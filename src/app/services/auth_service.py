@@ -3,7 +3,6 @@ import uuid
 from dataclasses import dataclass
 from typing import Dict, Optional
 import jwt
-from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from decouple import config
 
@@ -52,14 +51,15 @@ class AuthService:
         }
         return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
-    def verify_token(self, token: str) -> Optional[Dict[str, str]]:
-        """Проверяет JWT-токен и извлекает из него данные."""
+    def verify_token(self, token: str) -> Optional[User]:
+        """Проверяет JWT-токен и извлекает полную информацию о пользователе."""
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             username: str = payload.get("username")
             user_id: str = payload.get("user_id")
             if username is None or user_id is None:
                 return None
-            return {"username": username, "user_id": user_id}
+            user = self.users.get(username)
+            return user
         except jwt.PyJWTError:
             return None
