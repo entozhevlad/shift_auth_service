@@ -44,7 +44,8 @@ async def verify(current_user: User = Depends(get_current_user)):
         "username": current_user.username,
         "user_id": str(current_user.user_id),
         "first_name": current_user.first_name,
-        "last_name": current_user.last_name
+        "last_name": current_user.last_name,
+        "account": current_user.account
     }}
 
 @app.get("/healthz/ready")
@@ -62,5 +63,6 @@ async def verify_by_token(token: str = Query(...)):
         "username": user.username,
         "user_id": str(user.user_id),
         "first_name": user.first_name,
-        "last_name": user.last_name
+        "last_name": user.last_name,
+        "account": user.account
     }

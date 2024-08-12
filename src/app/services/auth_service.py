@@ -18,6 +18,7 @@ class User:
     user_id: uuid.UUID
     first_name: str
     last_name: str
+    account: float
     token: Optional[str] = None
 
 class AuthService:
@@ -30,7 +31,7 @@ class AuthService:
             return None
         user_id = uuid.uuid4()  # Генерируем уникальный идентификатор пользователя
         token = self._generate_token(username, user_id)
-        user = User(username=username, password=password, user_id=user_id, first_name=first_name, last_name=last_name, token=token)
+        user = User(username=username, password=password, user_id=user_id, first_name=first_name, last_name=last_name, token=token, account=0.0)
         self.users[username] = user
         return token
 
