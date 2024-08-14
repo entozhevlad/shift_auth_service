@@ -17,7 +17,7 @@ def user_data():
 def test_register_user(user_data):
     response = client.post(
         "/register",
-        params=user_data  # Используем params для передачи данных в качестве query parameters
+        params=user_data
     )
     assert response.status_code == status.HTTP_200_OK
     assert "token" in response.json()
@@ -37,7 +37,7 @@ def test_login_user(user_data):
     # Пытаемся авторизоваться
     response = client.post(
         "/login",
-        data={"username": user_data["username"], "password": user_data["password"]}  # Используем data для передачи формы
+        data={"username": user_data["username"], "password": user_data["password"]}
     )
     assert response.status_code == status.HTTP_200_OK
     assert "access_token" in response.json()
