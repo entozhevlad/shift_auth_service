@@ -1,61 +1,53 @@
 import pytest
 from fastapi.testclient import TestClient
-from httpx import AsyncClient
-
-from src.app.main import app
+from fastapi import status
+from src.app.main import app, auth_service
 
 client = TestClient(app)
 
-
 @pytest.fixture
-async def async_client():
-    async with AsyncClient(app=app, base_url="http://test") as ac:
-        yield ac
+def user_data():
+    return {
+        "username": "testuser",
+        "password": "testpassword",
+        "first_name": "Test",
+        "last_name": "User"
+    }
 
-
-def test_register():
+def test_register_user(user_data):
     response = client.post(
-        "/register", json={"username": "testuser", "password": "testpass"})
-    assert response.status_code == 200
+        "/register",
+        params=user_data  # Используем params для передачи данных в качестве query parameters
+    )
+    assert response.status_code == status.HTTP_200_OK
     assert "token" in response.json()
+    assert user_data["username"] in auth_service.users
 
+def test_register_existing_user(user_data):
+    # Сначала регистрируем пользователя
+    client.post("/register", params=user_data)
+    # Пытаемся зарегистрировать его снова
+    response = client.post("/register", params=user_data)
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json() == {"detail": "Пользователь уже существует"}
 
-def test_register_existing_user():
-    client.post("/register", json={"username": "testuser", "password": "testpass"})
+def test_login_user(user_data):
+    # Сначала регистрируем пользователя
+    client.post("/register", params=user_data)
+    # Пытаемся авторизоваться
     response = client.post(
-        "/register", json={"username": "testuser", "password": "testpass"})
-    assert response.status_code == 400
-    assert response.json() == {"detail": "User already exists"}
-
-
-def test_login():
-    client.post("/register", json={"username": "testuser", "password": "testpass"})
-    response = client.post(
-        "/login", json={"username": "testuser", "password": "testpass"})
-    assert response.status_code == 200
-    assert "token" in response.json()
-
+        "/login",
+        data={"username": user_data["username"], "password": user_data["password"]}  # Используем data для передачи формы
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert "access_token" in response.json()
 
 def test_login_invalid_user():
-    response = client.post(
-        "/login", json={"username": "invaliduser", "password": "invalidpass"})
-    assert response.status_code == 400
-    assert response.json() == {"detail": "Invalid username or password"}
+    response = client.post("/login", data={"username": "invaliduser", "password": "wrongpassword"})
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.json() == {"detail": "Неправильное имя пользователя или пароль"}
 
-
-@pytest.mark.asyncio
-async def test_verify_token(async_client):
-    response = client.post(
-        "/register", json={"username": "testuser", "password": "testpass"})
-    token = response.json()["token"]
-
-    response = await async_client.post("/verify", json={"token": token})
-    assert response.status_code == 200
-    assert response.json() == {"user": "testuser"}
-
-
-@pytest.mark.asyncio
-async def test_verify_invalid_token(async_client):
-    response = await async_client.post("/verify", json={"token": "invalidtoken"})
-    assert response.status_code == 401
-    assert response.json() == {"detail": "Invalid token"}
+def test_health_check():
+    response = client.get("/healthz/ready")
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == {"status": "healthy"}

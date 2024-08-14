@@ -2,7 +2,7 @@ version: '3'
 
 services:
   app:
-    container_name: 'shift-python-2024-auth-service'
+    container_name: 'auth_service_zarubin'
     build:
       context: app/
       dockerfile: Dockerfile
@@ -17,9 +17,3 @@ services:
       - seccomp:unconfined
     environment:
       - PYTHONPATH=/workspace/src
-    networks:
-      - shift-network
-
-networks:
-  shift-network:
-    external: true
