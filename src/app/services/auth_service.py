@@ -86,3 +86,4 @@ class AuthService:
             'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1),
         }
         return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+

@@ -1,9 +1,9 @@
 import logging
 from typing import Optional
-
-from fastapi import Depends, FastAPI, HTTPException
+import shutil
+from fastapi import Depends, FastAPI, HTTPException, UploadFile, File
 from fastapi.security import OAuth2PasswordRequestForm
-
+from src.app.external.kafka.kafka import KafkaProducerService
 from src.app.services.auth_service import AuthService, User, oauth2_scheme
 
 logging.basicConfig(level=logging.INFO)
@@ -92,3 +92,26 @@ async def verify(
 async def health_check():
     """Проверка состояния сервиса."""
     return {'status': 'healthy'}
+
+
+
+@app.post('/verify')
+async def verify(
+    current_user: User = Depends(get_current_user),
+    photo: UploadFile = File(...)
+):
+    """Метод верификации пользователя с сохранением фотографии и отправкой сообщения в Kafka."""
+    user_id = current_user.user_id
+    photo_path = f"/app/photos/{user_id}_{photo.filename}"
+    
+    with open(photo_path, "wb") as buffer:
+        shutil.copyfileobj(photo.file, buffer)
+    
+    kafka_producer = KafkaProducerService()
+    kafka_producer.send_message(
+        topic="face_verification",
+        key=str(user_id),
+        value={"user_id": str(user_id), "photo_path": photo_path}
+    )
+    
+    return {"status": "photo accepted for processing"}
