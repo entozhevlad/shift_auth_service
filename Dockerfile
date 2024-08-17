@@ -3,22 +3,22 @@ FROM python:3.12-slim
 WORKDIR /app
 
 ENV POETRY_VERSION=1.8.3
-RUN apt-get update && \
-    apt-get install --no-install-recommends -y \
-    curl \
-    && curl -sSL https://install.python-poetry.org | python3 - \
-    && poetry --version \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
 
 COPY poetry.lock pyproject.toml ./
-RUN poetry config virtualenvs.create false && \
-    poetry install --no-interaction --no-root
+
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y && \
+    apt-get install -y python3-pip && \
+    pip install "poetry==$POETRY_VERSION"
+
+RUN poetry config virtualenvs.create false && poetry install --no-interaction --no-root
 
 COPY .env .env
+
 COPY src /app/src
 
 COPY alembic.ini /app/
+
 COPY migrations /app/migrations
 
 ENV PYTHONPATH=/app
