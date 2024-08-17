@@ -1,8 +1,10 @@
 import logging
-from typing import Optional
 import shutil
-from fastapi import Depends, FastAPI, HTTPException, UploadFile, File
+from typing import Optional
+
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.security import OAuth2PasswordRequestForm
+
 from src.app.external.kafka.kafka import KafkaProducerService
 from src.app.services.auth_service import AuthService, User, oauth2_scheme
 
@@ -72,46 +74,26 @@ async def login(
     }
 
 
-@app.post('/verify')
-async def verify(
-    current_user: User = get_cur_user_dependancy,
-):
-    """Проверяет валидность токена и возвращает информацию о пользователе."""
-    return {
-        'user': {
-            'username': current_user.username,
-            'user_id': str(current_user.user_id),
-            'first_name': current_user.first_name,
-            'last_name': current_user.last_name,
-            'account': current_user.account,
-        },
-    }
-
-
 @app.get('/healthz/ready')
 async def health_check():
     """Проверка состояния сервиса."""
     return {'status': 'healthy'}
 
 
-
 @app.post('/verify')
 async def verify(
     current_user: User = Depends(get_current_user),
-    photo: UploadFile = File(...)
+    photo: UploadFile = File(...),
 ):
-    """Метод верификации пользователя с сохранением фотографии и отправкой сообщения в Kafka."""
+    """Метод верификации пользователя с сохранением фотографии и отправкой сообщения."""
     user_id = current_user.user_id
-    photo_path = f"/app/photos/{user_id}_{photo.filename}"
-    
-    with open(photo_path, "wb") as buffer:
+    photo_path = '/app/photos/{0}_{1}'.format(user_id, photo.filename)
+    with open(photo_path, 'wb') as buffer:
         shutil.copyfileobj(photo.file, buffer)
-    
     kafka_producer = KafkaProducerService()
     kafka_producer.send_message(
-        topic="face_verification",
+        topic='face_verification',
         key=str(user_id),
-        value={"user_id": str(user_id), "photo_path": photo_path}
+        value={'user_id': str(user_id), 'photo_path': photo_path},
     )
-    
-    return {"status": "photo accepted for processing"}
+    return {'status': 'photo accepted for processing'}
