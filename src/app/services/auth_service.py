@@ -1,15 +1,15 @@
 import datetime
 import uuid
-from typing import Optional
+from typing import Optional, Dict
 
 import jwt
 from decouple import config
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import update
 
 from src.app.db.models import UserModel
-from src.app.db.db import get_db
 from pydantic import BaseModel
 
 
@@ -19,15 +19,17 @@ class User(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     account: float
-    
+
     class Config:
-        orm_mode = True
-        from_attributes =True
+        from_attributes = True
 
 
 SECRET_KEY = config('SECRET_KEY')
 ALGORITHM = 'HS256'
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/login')
+
+# Словарь для хранения активных токенов
+active_tokens: Dict[str, User] = {}
 
 
 class AuthService:
@@ -65,6 +67,9 @@ class AuthService:
             await session.commit()
             await session.refresh(new_user)
 
+            # Сохраняем токен и пользователя в локальный словарь
+            active_tokens[token] = User.from_orm(new_user)
+
             return token
 
     async def authenticate(self, username: str, password: str) -> Optional[str]:
@@ -76,25 +81,38 @@ class AuthService:
             if not user or user.password != password:
                 return None
 
-            user.token = self._generate_token(username, user.user_id)
-            return user.token
+            token = self._generate_token(username, user.user_id)
 
-    async def verify_token(self, token: str) -> Optional[UserModel]:
+            # Сохраняем токен и пользователя в локальный словарь
+            active_tokens[token] = User.from_orm(user)
+
+            return token
+
+    async def verify_token(self, token: str) -> Optional[User]:
+        # Проверяем наличие токена в локальном словаре
+        if token in active_tokens:
+            return active_tokens[token]
+
+        # Если токен не найден, декодируем и проверяем его валидность
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         except jwt.PyJWTError:
             return None
 
-        username = payload.get('username')
         user_id = payload.get('user_id')
-
-        if not username or not user_id:
+        if not user_id:
             return None
 
         async with self.db as session:
-            query = select(UserModel).filter(UserModel.username == username)
+            query = select(UserModel).filter(UserModel.user_id == user_id)
             result = await session.execute(query)
-            return result.scalar_one_or_none()
+            user_model = result.scalar_one_or_none()
+            if user_model:
+                user = User.from_orm(user_model)
+                # Сохраняем токен в локальный словарь, если он валиден
+                active_tokens[token] = user
+                return user
+            return None
 
     def _generate_token(self, username: str, user_id: uuid.UUID) -> str:
         payload = {
@@ -103,21 +121,18 @@ class AuthService:
             'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1),
         }
         return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-    
-    async def get_user(self, user_id: str) -> Optional[User]:
-        async with self.db as session:  # Заменяем self.db_session на self.db
-            query = select(UserModel).filter(UserModel.user_id == user_id)
-            result = await session.execute(query)
-            user = result.scalars().first()
-            if user:
-                return User.from_orm(user)
-            return None
 
     async def update_user_balance(self, user_id: str, new_balance: float) -> bool:
-        async with self.db as session:  # Заменяем self.db_session на self.db
-            query = update(UserModel).where(UserModel.user_id == user_id).values(account=new_balance)
+        async with self.db as session:
+            query = update(UserModel).where(UserModel.user_id ==
+                                            user_id).values(account=new_balance)
             result = await session.execute(query)
-            if result.rowcount == 0:
-                return False
             await session.commit()
-            return True
+            return result.rowcount > 0
+
+    async def get_user_balance(self, user_id: str) -> Optional[float]:
+        async with self.db as session:
+            query = select(UserModel).filter(UserModel.user_id == user_id)
+            result = await session.execute(query)
+            user = result.scalar_one_or_none()
+            return user.account if user else None
