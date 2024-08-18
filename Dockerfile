@@ -23,9 +23,6 @@ COPY migrations /app/migrations/
 
 ENV PYTHONPATH=/app
 
-# Выполняем команду alembic revision
-RUN alembic revision --autogenerate -m "Create users table"
-
 EXPOSE 82
 
 # Запускаем миграции и приложение
