@@ -19,7 +19,7 @@ COPY src /app/src
 
 COPY alembic.ini /app/
 
-COPY migrations /app/migrations
+COPY migrations /app/migrations/
 
 ENV PYTHONPATH=/app
 
