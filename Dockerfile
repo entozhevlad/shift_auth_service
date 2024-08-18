@@ -23,9 +23,7 @@ COPY migrations /app/migrations/
 
 ENV PYTHONPATH=/app
 
-RUN alembic revision --autogenerate -m "Create users table"
-
 EXPOSE 82
 
-# Запускаем миграции и приложение
-ENTRYPOINT ["sh", "-c", "alembic upgrade head && uvicorn src.app.main:app --host 0.0.0.0 --port 82"]
+ENTRYPOINT ["uvicorn", "src.app.main:app", "--host", "0.0.0.0", "--port", "82"]
+
