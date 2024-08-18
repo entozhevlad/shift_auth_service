@@ -2,6 +2,9 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from decouple import config
+from sqlalchemy import MetaData
+
+
 
 DATABASE_URL = config(
     'DATABASE_URL', default='postgresql+asyncpg://postgres:postgres@db:5432/auth_db')
@@ -14,6 +17,8 @@ AsyncSessionLocal = sessionmaker(
 )
 
 Base = declarative_base()
+metadata = MetaData()
+
 
 
 async def get_db():
