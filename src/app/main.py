@@ -103,9 +103,11 @@ async def verify(
     return {"status": "photo accepted for processing"}
 
 @app.get("/users/get_balance")
-async def get_user_balance(token: str = Depends(oauth2_scheme)):
-    auth_service = AuthService(db_session)
-    user = await auth_service.get_user(token)
+async def get_user_balance(
+    token: str = Depends(oauth2_scheme),
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    user = await auth_service.verify_token(token)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return {"balance": user.account}
