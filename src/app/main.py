@@ -104,3 +104,24 @@ async def verify(
     )
 
     return {"status": "photo accepted for processing"}
+
+@app.get('/users/{user_id}/get_balance')
+async def get_user_balance(
+    user_id: str,
+    auth_service: AuthService = auth_service_dependency
+):
+    user = await auth_service.get_user(user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"balance": user.account}
+
+@app.patch('/users/{user_id}/update_balance')
+async def update_user_balance(
+    user_id: str,
+    new_balance: float,
+    auth_service: AuthService = auth_service_dependency
+):
+    success = await auth_service.update_user_balance(user_id, new_balance)
+    if not success:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"status": "balance updated"}
