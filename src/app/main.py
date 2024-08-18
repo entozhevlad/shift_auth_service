@@ -74,10 +74,7 @@ async def login(
             status_code=400,
             detail="Неправильное имя пользователя или пароль",
         )
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-    }
+    return {"token": token,}
 
 
 @app.get('/healthz/ready')

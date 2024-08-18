@@ -101,7 +101,7 @@ class AuthService:
         return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     
     async def get_user(self, user_id: str) -> Optional[User]:
-        async with self.db_session() as session:
+        async with self.db as session:  # Заменяем self.db_session на self.db
             query = select(UserModel).filter(UserModel.user_id == user_id)
             result = await session.execute(query)
             user = result.scalars().first()
@@ -110,7 +110,7 @@ class AuthService:
             return None
 
     async def update_user_balance(self, user_id: str, new_balance: float) -> bool:
-        async with self.db_session() as session:
+        async with self.db as session:  # Заменяем self.db_session на self.db
             query = update(UserModel).where(UserModel.user_id == user_id).values(account=new_balance)
             result = await session.execute(query)
             if result.rowcount == 0:
