@@ -19,6 +19,10 @@ class User(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     account: float
+    
+    class Config:
+        orm_mode = True
+        from_attributes =True
 
 
 SECRET_KEY = config('SECRET_KEY')
