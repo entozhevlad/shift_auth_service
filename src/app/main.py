@@ -134,7 +134,6 @@ async def update_user_balance(
     auth_service: AuthService = Depends(get_auth_service)
 ):
     if not token:
-        logger.error("Token missing")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token missing"
@@ -142,7 +141,6 @@ async def update_user_balance(
 
     token = token.replace("Bearer ", "")
     if not token:
-        logger.error("Token missing in Authorization header")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token missing in Authorization header"
@@ -150,7 +148,6 @@ async def update_user_balance(
 
     user = await auth_service.verify_token(token)
     if not user:
-        logger.error("Invalid or expired token")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token"
@@ -162,5 +159,4 @@ async def update_user_balance(
     if not success:
         raise HTTPException(status_code=404, detail="User not found")
 
-    logger.info(f"User {user_id} balance updated to {new_balance}")
     return {"status": "balance updated"}
