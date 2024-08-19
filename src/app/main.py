@@ -106,10 +106,11 @@ async def verify(
 
     kafka_producer = KafkaProducerService()
     kafka_producer.send_message(
-        topic='face_verification',
-        key=str(user_id),
-        value={'user_id': str(user_id), 'photo_path': photo_path},
+    topic='face_verification',
+    key=str(user_id),
+    message_data={'user_id': str(user_id), 'photo_path': photo_path},
     )
+
 
     return {'status': 'photo accepted for processing'}
 
