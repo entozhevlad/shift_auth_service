@@ -122,10 +122,10 @@ class AuthService:
         }
         return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
-    async def update_user_balance(self, user_id: str, new_balance: float) -> bool:
+    async def update_user_balance(self, user_id: str, amount: float) -> bool:
         async with self.db as session:
             query = update(UserModel).where(UserModel.user_id ==
-                                            user_id).values(account=new_balance)
+                                            user_id).values(account=amount)
             result = await session.execute(query)
             await session.commit()
             return result.rowcount > 0

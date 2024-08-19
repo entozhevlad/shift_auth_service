@@ -129,7 +129,7 @@ async def get_user_balance(
 
 @app.patch('/users/update_balance')
 async def update_user_balance(
-    new_balance: float,
+    amount: float = Query(...),
     token: str = Query(..., alias="Authorization"),
     auth_service: AuthService = Depends(get_auth_service)
 ):
@@ -155,7 +155,7 @@ async def update_user_balance(
 
     user_id = user.user_id  # Извлечение user_id из данных токена
 
-    success = await auth_service.update_user_balance(user_id, new_balance)
+    success = await auth_service.update_user_balance(user_id, amount)
     if not success:
         raise HTTPException(status_code=404, detail="User not found")
 
