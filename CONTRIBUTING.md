@@ -38,3 +38,4 @@ AuthService работает с базой auth_db
 
 - docker exec -it shift-api-gateway-auth_service-1 alembic revision --autogenerate -m "Initial migration"
 - docker exec -it shift-api-gateway-auth_service-1 alembic upgrade head
+
