@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: zar-auth-service
-        image: your-docker-registry/zar-auth-service:latest
+        image: aliquis21/zar-auth-service:latest
         ports:
         - containerPort: 8080
         resources:
@@ -27,11 +27,14 @@ spec:
             cpu: "250m"
         env:
         - name: DATABASE_URL
-          value: "postgresql+asyncpg://username:password@postgres-service:5432/vzarubin"
+          valueFrom:
+            secretKeyRef:
+              name: zar-auth-service-secrets
+              key: DATABASE_URL
         - name: KAFKA_BOOTSTRAP_SERVERS
           valueFrom:
             configMapKeyRef:
-              name: zar-app-config
+              name: zar-auth-service-config
               key: KAFKA_BOOTSTRAP_SERVERS
         volumeMounts:
         - name: photos-storage
