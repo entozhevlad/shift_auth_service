@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-auth-service
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-auth-service
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-auth-service
+    spec:
+      containers:
+      - name: auth-service
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        ports:
+        - containerPort: {{ .Values.service.port }}
+        resources:
+          limits:
+            memory: {{ .Values.resources.limits.memory }}
+            cpu: {{ .Values.resources.limits.cpu }}
+          requests:
+            memory: {{ .Values.resources.requests.memory }}
+            cpu: {{ .Values.resources.requests.cpu }}
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-auth-service-secrets
+              key: DATABASE_URL
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-auth-service-config
+              key: KAFKA_BOOTSTRAP_SERVERS
+        volumeMounts:
+        - name: photos-storage
+          mountPath: /app/photos
+      volumes:
+      - name: photos-storage
+        persistentVolumeClaim:
+          claimName: {{ .Values.pvc.name }}
+      imagePullSecrets:
+        - name: regcred

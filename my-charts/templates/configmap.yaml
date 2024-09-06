@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-auth-service-config
+  namespace: {{ .Values.namespace }}
+data:
+  DATABASE_HOST: {{ .Values.database.host | quote }}
+  DATABASE_PORT: {{ .Values.database.port | quote }}
+  JWT_SECRET_KEY: {{ .Values.jwtSecret | quote }}
+  KAFKA_BOOTSTRAP_SERVERS: {{ .Values.kafka.bootstrapServers | quote }}

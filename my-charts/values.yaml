@@ -1,0 +1,38 @@
+namespace: test
+
+replicas: 2
+
+image:
+  repository: aliquis21/zar-auth-service
+  tag: latest
+
+service:
+  port: 82
+  targetPort: 8080
+
+resources:
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
+  requests:
+    memory: "256Mi"
+    cpu: "250m"
+
+database:
+  host: postgres-service
+  port: 5432
+  url: "postgresql+asyncpg://username:password@postgres-service:5432/vzarubin"
+
+jwtSecret: "eyJhbGciOiJIUzI1NiJ9.eyJSb2xlIjoiQWRtaW4iLCJJc3N1ZXIiOiJJc3N1ZXIiLCJVc2VybmFtZSI6IkphdmFJblVzZSIsImV4cCI6MTcyMDA4MTcxNywiaWF0IjoxNzIwMDgxNzE3fQ.pVVn3P7Fzl62b6O-Qge0TpUiA75zu1rNGXpzwykkRHc"
+
+kafka:
+  bootstrapServers: "kafka-service:9092"
+
+pvc:
+  name: zar-photos-pvc
+  accessMode: ReadWriteOnce
+  storage: 1Gi
+
+serviceAccount:
+  create: true
+  name: ""
