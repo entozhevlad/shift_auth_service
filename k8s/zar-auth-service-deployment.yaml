@@ -43,3 +43,6 @@ spec:
       - name: photos-storage
         persistentVolumeClaim:
           claimName: zar-photos-pvc
+      imagePullSecrets:
+        - name: regcred
+
