@@ -1,8 +1,10 @@
 import logging
 import shutil
+import time
 from typing import Optional
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, Header, status, Query
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, Header, status, Query, Request, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.app.db.db import get_db
 from src.app.external.kafka.kafka import KafkaProducerService
@@ -31,6 +33,31 @@ async def get_auth_header(token: str = Depends(oauth2_scheme)):
 auth_service_dependency = Depends(get_auth_service)
 
 # Получаем текущего пользователя
+
+# Метрики
+REQUEST_COUNT = Counter('request_count', 'Total request count', ['endpoint', 'http_status'])
+REQUEST_DURATION = Histogram('request_duration_seconds', 'Duration of requests in seconds', ['endpoint'])
+AUTH_SUCCESS = Counter('auth_success_total', 'Total successful authentication attempts')
+AUTH_FAILURE = Counter('auth_failure_total', 'Total failed authentication attempts')
+
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    request_duration = time.time() - start_time
+
+    # Логируем количество запросов по эндпоинтам и статусам
+    REQUEST_COUNT.labels(endpoint=request.url.path, http_status=response.status_code).inc()
+    
+    # Логируем время выполнения запросов
+    REQUEST_DURATION.labels(endpoint=request.url.path).observe(request_duration)
+
+    return response
+
+# Эндпоинт для метрик
+@app.get("/metrics")
+async def get_metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 async def get_current_user(
@@ -80,10 +107,13 @@ async def login(
         form_data.password,
     )
     if not token:
+        AUTH_FAILURE.inc()
         raise HTTPException(
             status_code=400,
             detail="Неправильное имя пользователя или пароль",
         )
+    
+    AUTH_SUCCESS.inc() 
     return {"access_token": token, "token_type": "bearer"}
 
 
