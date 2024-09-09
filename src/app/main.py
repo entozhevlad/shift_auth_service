@@ -9,7 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.app.db.db import get_db
 from src.app.external.kafka.kafka import KafkaProducerService
 from src.app.services.auth_service import AuthService, User
-
+from opentelemetry import trace
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 logging.basicConfig(level=logging.INFO)
 
@@ -32,7 +37,21 @@ async def get_auth_header(token: str = Depends(oauth2_scheme)):
 # Глобальный экземпляр AuthService, созданный с использованием зависимости
 auth_service_dependency = Depends(get_auth_service)
 
-# Получаем текущего пользователя
+# Настройка Jaeger Exporter
+jaeger_exporter = JaegerExporter(
+    agent_host_name='jaeger',
+    agent_port=6831,
+)
+
+# Настройка трейсера
+resource = Resource.create(attributes={"service.name": "auth_service"})
+trace_provider = TracerProvider(resource=resource)
+span_processor = BatchSpanProcessor(jaeger_exporter)
+trace_provider.add_span_processor(span_processor)
+trace.set_tracer_provider(trace_provider)
+
+# Инструментируем FastAPI
+FastAPIInstrumentor.instrument_app(app)
 
 # Метрики
 REQUEST_COUNT = Counter('request_count', 'Total request count', ['endpoint', 'http_status'])
@@ -48,7 +67,7 @@ async def metrics_middleware(request: Request, call_next):
 
     # Логируем количество запросов по эндпоинтам и статусам
     REQUEST_COUNT.labels(endpoint=request.url.path, http_status=response.status_code).inc()
-    
+
     # Логируем время выполнения запросов
     REQUEST_DURATION.labels(endpoint=request.url.path).observe(request_duration)
 
@@ -112,8 +131,8 @@ async def login(
             status_code=400,
             detail="Неправильное имя пользователя или пароль",
         )
-    
-    AUTH_SUCCESS.inc() 
+
+    AUTH_SUCCESS.inc()
     return {"access_token": token, "token_type": "bearer"}
 
 

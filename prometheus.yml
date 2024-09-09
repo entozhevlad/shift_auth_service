@@ -1,0 +1,6 @@
+scrape_configs:
+  - job_name: 'zar_auth_service'
+    metrics_path: /metrics 
+    scrape_interval: 15s    
+    static_configs:
+      - targets: ['zar-auth-service-auth-service.test.svc.cluster.local:82']
