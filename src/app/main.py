@@ -10,11 +10,12 @@ from src.app.db.db import get_db
 from src.app.external.kafka.kafka import KafkaProducerService
 from src.app.services.auth_service import AuthService, User
 from opentelemetry import trace
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
 logging.basicConfig(level=logging.INFO)
 
@@ -37,21 +38,36 @@ async def get_auth_header(token: str = Depends(oauth2_scheme)):
 # Глобальный экземпляр AuthService, созданный с использованием зависимости
 auth_service_dependency = Depends(get_auth_service)
 
-# Настройка Jaeger Exporter
-jaeger_exporter = JaegerExporter(
-    agent_host_name='jaeger',
-    agent_port=6831,
-)
-
-# Настройка трейсера
+# Настройка ресурса с указанием имени сервиса
 resource = Resource.create(attributes={"service.name": "auth_service"})
+
+# Инициализация трейсера с ресурсом
 trace_provider = TracerProvider(resource=resource)
-span_processor = BatchSpanProcessor(jaeger_exporter)
-trace_provider.add_span_processor(span_processor)
 trace.set_tracer_provider(trace_provider)
 
-# Инструментируем FastAPI
+# Настройка Jaeger Exporter
+jaeger_exporter = JaegerExporter(
+    agent_host_name='jaeger',  # Jaeger host из docker-compose
+    agent_port=6831,           # порт Jaeger для UDP
+)
+
+# Создание процессора для отправки трейсингов в Jaeger
+span_processor = BatchSpanProcessor(jaeger_exporter)
+trace_provider.add_span_processor(span_processor)
+
+# Инструментирование FastAPI
 FastAPIInstrumentor.instrument_app(app)
+
+# Инструментирование HTTP-клиентов (например, requests)
+RequestsInstrumentor().instrument()
+
+# Завершение работы (shutdown) при завершении приложения
+@app.on_event("shutdown")
+def shutdown_tracer():
+    try:
+        trace.get_tracer_provider().shutdown()
+    except Exception as e:
+        print(f"Ошибка завершения трейсера: {e}")
 
 # Метрики
 REQUEST_COUNT = Counter('request_count', 'Total request count', ['endpoint', 'http_status'])
