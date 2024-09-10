@@ -1,6 +1,7 @@
 import logging
 import shutil
 import time
+import redis  # Импорт Redis клиента
 from typing import Optional
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, Header, status, Query, Request, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -21,22 +22,13 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
 
-# Глобальный экземпляр AuthService
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/login')
-
 
 def get_auth_service(db: AsyncSession = Depends(get_db)):
     return AuthService(db)
 
-
 async def get_auth_header(token: str = Depends(oauth2_scheme)):
     return {"Authorization": f"Bearer {token}"}
-
-# Глобальная зависимость для OAuth2
-
-
-# Глобальный экземпляр AuthService, созданный с использованием зависимости
-auth_service_dependency = Depends(get_auth_service)
 
 # Настройка ресурса с указанием имени сервиса
 resource = Resource.create(attributes={"service.name": "auth_service"})
@@ -60,6 +52,9 @@ FastAPIInstrumentor.instrument_app(app)
 
 # Инструментирование HTTP-клиентов (например, requests)
 RequestsInstrumentor().instrument()
+
+# Инициализация Redis клиента
+redis_client = redis.Redis(host='redis', port=6379, db=0, decode_responses=True)
 
 # Завершение работы (shutdown) при завершении приложения
 @app.on_event("shutdown")
@@ -94,19 +89,26 @@ async def metrics_middleware(request: Request, call_next):
 async def get_metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
-
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     auth_service: AuthService = Depends(get_auth_service)
 ) -> User:
+    # Попытка извлечь данные пользователя из Redis
+    user_data = redis_client.get(f"user:{token}")
+    if user_data:
+        return User.parse_raw(user_data)
+
+    # Если данных нет в Redis, выполняем проверку в базе данных
     user = await auth_service.verify_token(token)
     if user is None:
         raise HTTPException(
             status_code=401,
             detail="Неверный или истекший токен",
         )
-    return user
 
+    # Кэшируем данные пользователя в Redis
+    redis_client.set(f"user:{token}", user.json(), ex=3600)  # Кэширование на 1 час
+    return user
 
 @app.post('/register')
 async def register(
@@ -130,7 +132,6 @@ async def register(
         )
     return {"token": token}
 
-
 @app.post('/login')
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -151,11 +152,9 @@ async def login(
     AUTH_SUCCESS.inc()
     return {"access_token": token, "token_type": "bearer"}
 
-
 @app.get('/healthz/ready')
 async def health_check():
     return {"status": "healthy"}
-
 
 @app.post('/verify')
 async def verify(
@@ -176,54 +175,13 @@ async def verify(
     message_data={'user_id': str(user_id), 'photo_path': photo_path},
     )
 
-
     return {'status': 'photo accepted for processing'}
-
 
 @app.get('/users/balance')
 async def get_user_balance(
     current_user: User = Depends(get_current_user),
     auth_service: AuthService = Depends(get_auth_service)
 ):
-    """Получает информацию о балансе пользователя."""
-    user_id = current_user.user_id
-    balance = await auth_service.get_user_balance(user_id)
-    if balance is None:
-        raise HTTPException(status_code=404, detail="User not found")
+    """Получает баланс пользователя."""
+    balance = await auth_service.get_user_balance(current_user.user_id)
     return {"balance": balance}
-
-
-@app.patch('/users/update_balance')
-async def update_user_balance(
-    amount: float = Query(...),
-    token: str = Query(..., alias="Authorization"),
-    auth_service: AuthService = Depends(get_auth_service)
-):
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token missing"
-        )
-
-    token = token.replace("Bearer ", "")
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token missing in Authorization header"
-        )
-
-    user = await auth_service.verify_token(token)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
-        )
-
-    user_id = user.user_id  # Извлечение user_id из данных токена
-
-    success = await auth_service.update_user_balance(user_id, amount)
-    if not success:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    return {"status": "balance updated"}
-
