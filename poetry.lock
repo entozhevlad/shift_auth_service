@@ -1181,6 +1181,26 @@ opentelemetry-util-http = "0.48b0"
 instruments = ["fastapi (>=0.58,<1.0)"]
 
 [[package]]
+name = "opentelemetry-instrumentation-requests"
+version = "0.48b0"
+description = "OpenTelemetry requests instrumentation"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "opentelemetry_instrumentation_requests-0.48b0-py3-none-any.whl", hash = "sha256:d4f01852121d0bd4c22f14f429654a735611d4f7bf3cf93f244bdf1489b2233d"},
+    {file = "opentelemetry_instrumentation_requests-0.48b0.tar.gz", hash = "sha256:67ab9bd877a0352ee0db4616c8b4ae59736ddd700c598ed907482d44f4c9a2b3"},
+]
+
+[package.dependencies]
+opentelemetry-api = ">=1.12,<2.0"
+opentelemetry-instrumentation = "0.48b0"
+opentelemetry-semantic-conventions = "0.48b0"
+opentelemetry-util-http = "0.48b0"
+
+[package.extras]
+instruments = ["requests (>=2.0,<3.0)"]
+
+[[package]]
 name = "opentelemetry-sdk"
 version = "1.27.0"
 description = "OpenTelemetry Python SDK"
@@ -2321,4 +2341,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "43b327df8b828b5b95a2c361045603b511f10d737c77a541e9d0f72901bc3c75"
+content-hash = "4de91412431bdef09b8f46bbc3895651937c553e696cd4e662c71c50914a4fe6"
