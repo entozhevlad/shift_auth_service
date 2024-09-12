@@ -26,7 +26,6 @@ opentelemetry-instrumentation-fastapi = "^0.48b0"
 opentelemetry-exporter-jaeger = "^1.21.0"
 opentelemetry-instrumentation-requests = "^0.48b0"
 requests = "^2.32.3"
-aioredis = "^2.0.1"
 redis = "^5.0.8"
 
 [tool.poetry.group.dev.dependencies]

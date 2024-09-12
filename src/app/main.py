@@ -1,9 +1,9 @@
 import logging
 import shutil
 import time
-import redis  # Импорт Redis клиента
+import redis.asyncio as redis  # Импорт асинхронного клиента Redis
 from typing import Optional
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, Header, status, Query, Request, Response
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, Header, Query, Request, Response
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -53,8 +53,9 @@ FastAPIInstrumentor.instrument_app(app)
 # Инструментирование HTTP-клиентов (например, requests)
 RequestsInstrumentor().instrument()
 
-# Инициализация Redis клиента
-redis_client = redis.Redis(host='redis', port=6379, db=0, decode_responses=True)
+# Инициализация асинхронного Redis клиента
+async def get_redis():
+    return redis.Redis(host='redis', port=6379, db=0, decode_responses=True)
 
 # Завершение работы (shutdown) при завершении приложения
 @app.on_event("shutdown")
@@ -91,10 +92,11 @@ async def get_metrics():
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
-    auth_service: AuthService = Depends(get_auth_service)
+    auth_service: AuthService = Depends(get_auth_service),
+    redis_client: redis.Redis = Depends(get_redis)  # Добавляем Redis клиент как зависимость
 ) -> User:
     # Попытка извлечь данные пользователя из Redis
-    user_data = redis_client.get(f"user:{token}")
+    user_data = await redis_client.get(f"user:{token}")
     if user_data:
         return User.parse_raw(user_data)
 
@@ -107,7 +109,7 @@ async def get_current_user(
         )
 
     # Кэшируем данные пользователя в Redis
-    redis_client.set(f"user:{token}", user.json(), ex=3600)  # Кэширование на 1 час
+    await redis_client.set(f"user:{token}", user.json(), ex=3600)  # Кэширование на 1 час
     return user
 
 @app.post('/register')
@@ -170,9 +172,9 @@ async def verify(
 
     kafka_producer = KafkaProducerService()
     kafka_producer.send_message(
-    topic='face_verification',
-    key=str(user_id),
-    message_data={'user_id': str(user_id), 'photo_path': photo_path},
+        topic='face_verification',
+        key=str(user_id),
+        message_data={'user_id': str(user_id), 'photo_path': photo_path},
     )
 
     return {'status': 'photo accepted for processing'}
