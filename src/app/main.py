@@ -187,3 +187,37 @@ async def get_user_balance(
     """Получает баланс пользователя."""
     balance = await auth_service.get_user_balance(current_user.user_id)
     return {"balance": balance}
+
+@app.patch('/users/update_balance')
+async def update_user_balance(
+    amount: float = Query(...),
+    token: str = Query(..., alias="Authorization"),
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token missing"
+        )
+
+    token = token.replace("Bearer ", "")
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token missing in Authorization header"
+        )
+
+    user = await auth_service.verify_token(token)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+
+    user_id = user.user_id  # Извлечение user_id из данных токена
+
+    success = await auth_service.update_user_balance(user_id, amount)
+    if not success:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {"status": "balance updated"}
