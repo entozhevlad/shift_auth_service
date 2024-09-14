@@ -1,19 +1,21 @@
 import datetime
 import uuid
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 import jwt
 from decouple import config
 from fastapi.security import OAuth2PasswordBearer
+from pydantic import BaseModel
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import update
 
 from src.app.db.models import UserModel
-from pydantic import BaseModel
 
 
 class User(BaseModel):
+    """Модель пользователя для сервиса авторизации."""
+
     user_id: uuid.UUID
     username: str
     first_name: Optional[str] = None
@@ -21,6 +23,8 @@ class User(BaseModel):
     account: float
 
     class Config:
+        """Конфиг для юзера."""
+
         from_attributes = True
 
 
@@ -33,7 +37,10 @@ active_tokens: Dict[str, User] = {}
 
 
 class AuthService:
+    """Сервис для управления авторизацией и пользователями."""
+
     def __init__(self, db: AsyncSession):
+        """Инициализация сервиса авторизации с подключением к базе данных."""
         self.db = db
 
     async def register(
@@ -43,10 +50,11 @@ class AuthService:
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
     ) -> Optional[str]:
+        """Регистрация нового пользователя."""
         async with self.db as session:
             query = select(UserModel).filter(UserModel.username == username)
-            result = await session.execute(query)
-            existing_user = result.scalar_one_or_none()
+            execution_result = await session.execute(query)
+            existing_user = execution_result.scalar_one_or_none()
 
             if existing_user:
                 return None
@@ -60,40 +68,38 @@ class AuthService:
                 password=password,
                 first_name=first_name,
                 last_name=last_name,
-                account=0.0
+                account=0.0,
             )
 
             session.add(new_user)
             await session.commit()
             await session.refresh(new_user)
 
-            # Сохраняем токен и пользователя в локальный словарь
             active_tokens[token] = User.from_orm(new_user)
 
             return token
 
     async def authenticate(self, username: str, password: str) -> Optional[str]:
+        """Аутентификация пользователя."""
         async with self.db as session:
             query = select(UserModel).filter(UserModel.username == username)
-            result = await session.execute(query)
-            user = result.scalar_one_or_none()
+            execution_result = await session.execute(query)
+            user = execution_result.scalar_one_or_none()
 
             if not user or user.password != password:
                 return None
 
             token = self._generate_token(username, user.user_id)
 
-            # Сохраняем токен и пользователя в локальный словарь
             active_tokens[token] = User.from_orm(user)
 
             return token
 
     async def verify_token(self, token: str) -> Optional[User]:
-        # Проверяем наличие токена в локальном словаре
+        """Верификация токена и получение пользователя."""
         if token in active_tokens:
             return active_tokens[token]
 
-        # Если токен не найден, декодируем и проверяем его валидность
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         except jwt.PyJWTError:
@@ -105,16 +111,16 @@ class AuthService:
 
         async with self.db as session:
             query = select(UserModel).filter(UserModel.user_id == user_id)
-            result = await session.execute(query)
-            user_model = result.scalar_one_or_none()
+            execution_result = await session.execute(query)
+            user_model = execution_result.scalar_one_or_none()
             if user_model:
                 user = User.from_orm(user_model)
-                # Сохраняем токен в локальный словарь, если он валиден
                 active_tokens[token] = user
                 return user
             return None
 
     def _generate_token(self, username: str, user_id: uuid.UUID) -> str:
+        """Генерация JWT токена для пользователя."""
         payload = {
             'username': username,
             'user_id': str(user_id),
@@ -123,17 +129,17 @@ class AuthService:
         return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
     async def update_user_balance(self, user_id: str, amount: float) -> bool:
+        """Обновление баланса пользователя."""
         async with self.db as session:
-            query = update(UserModel).where(UserModel.user_id ==
-                                            user_id).values(account=amount)
-            result = await session.execute(query)
+            query = update(UserModel).where(UserModel.user_id == user_id).values(account=amount)
+            execution_result = await session.execute(query)
             await session.commit()
-            return result.rowcount > 0
+            return execution_result.rowcount > 0
 
     async def get_user_balance(self, user_id: str) -> Optional[float]:
+        """Получение баланса пользователя."""
         async with self.db as session:
             query = select(UserModel).filter(UserModel.user_id == user_id)
-            result = await session.execute(query)
-            user = result.scalar_one_or_none()
+            execution_result = await session.execute(query)
+            user = execution_result.scalar_one_or_none()
             return user.account if user else None
-
