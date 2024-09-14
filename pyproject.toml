@@ -27,6 +27,12 @@ opentelemetry-exporter-jaeger = "^1.21.0"
 opentelemetry-instrumentation-requests = "^0.48b0"
 requests = "^2.32.3"
 redis = "^5.0.8"
+pytest-mock = "^3.14.0"
+anyio = "^4.4.0"
+pytest-tornasync = "^0.6.0.post2"
+pytest-trio = "^0.8.0"
+pytest-twisted = "^1.14.3"
+twisted = "^24.7.0"
 
 [tool.poetry.group.dev.dependencies]
 wemake-python-styleguide = "^0.19.2"
